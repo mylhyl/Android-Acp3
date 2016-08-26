@@ -165,13 +165,13 @@ class AcpManager {
                         grantedPermissions.add(permission);
                     else deniedPermissions.add(permission);
                 }
-                onDestroy();
                 //全部允许才回调 onGranted 否则只要有一个拒绝都回调 onDenied
                 if (!grantedPermissions.isEmpty() && deniedPermissions.isEmpty()) {
                     mCallback.onGranted();
                 } else {
                     mCallback.onDenied(deniedPermissions);
                 }
+                onDestroy();
                 break;
         }
     }
