@@ -114,7 +114,7 @@ class AcpManager {
         }
         mCallback.onStart(new PermissionRequest() {
             @Override
-            public void onPositive() {
+            public void onExecute() {
                 startAcpActivity();
             }
         });
@@ -145,7 +145,7 @@ class AcpManager {
         //如选择了不再提醒，则回调
         if (rationale) mCallback.onShowRational(new PermissionRequest() {
             @Override
-            public void onPositive() {
+            public void onExecute() {
                 requestPermissions();
             }
         });

@@ -39,12 +39,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onStart(final PermissionRequest request) {
+        //可以不用提示，直接 request.onExecute();
         new AlertDialog.Builder(this)
                 .setMessage("XX需要获取【存储空间】与【地地位置】权限，以保证XX正常使用以及您的账号安全")
                 .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        request.onPositive();
+                        request.onExecute();
                     }
                 }).show();
     }
@@ -56,7 +57,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setPositiveButton("知道了", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        request.onPositive();
+                        request.onExecute();
                     }
                 }).show();
     }

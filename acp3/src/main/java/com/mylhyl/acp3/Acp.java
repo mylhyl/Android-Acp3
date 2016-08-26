@@ -52,7 +52,7 @@ public class Acp {
     }
 
     /**
-     * 重新开始
+     * 重新请求，用在如：跳转到权限设置界面，onActivityResult 接收时调用
      */
     public static void reExecute() {
         getAcpManager().checkSelfPermission();
