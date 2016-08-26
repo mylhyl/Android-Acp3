@@ -18,8 +18,6 @@ import java.util.Set;
  */
 class AcpManager {
     private static final String TAG = "AcpManager";
-    private static final int REQUEST_CODE_PERMISSION = 0x38;
-    private static final int REQUEST_CODE_SETTING = 0x39;
     private Context mContext;
     private Activity mActivity;
     private AcpService mService;
@@ -28,8 +26,21 @@ class AcpManager {
     private final List<String> mDeniedPermissions = new LinkedList<>();
     private final Set<String> mManifestPermissions = new HashSet<>(1);
 
-    AcpManager(Context context) {
-        mContext = context;
+    private static final Object lock = new Object();
+    private static volatile AcpManager mInstance;
+
+    public static void getInstance() {
+        if (mInstance == null)
+            synchronized (lock) {
+                if (mInstance == null) {
+                    mInstance = new AcpManager();
+                }
+            }
+        Acp.setAcpManager(mInstance);
+    }
+
+    AcpManager() {
+        mContext = Acp.app();
         mService = new AcpService();
         getManifestPermissions();
     }
@@ -53,24 +64,24 @@ class AcpManager {
     }
 
     /**
-     * 开始请求
+     * 开始执行
      *
      * @param permissions
      * @param acpListener
      */
-    synchronized void request(String[] permissions, AcpListener acpListener) {
+    synchronized void execute(String[] permissions, AcpListener acpListener) {
         if (permissions == null || permissions.length == 0)
             throw new IllegalArgumentException("mPermissions no found...");
         if (acpListener == null) throw new NullPointerException("AcpListener is null...");
         mPermissions = permissions;
         mCallback = acpListener;
-        checkSelfPermission();
+        mCallback.onStart();
     }
 
     /**
      * 检查权限
      */
-    private synchronized void checkSelfPermission() {
+    synchronized void checkSelfPermission() {
         mDeniedPermissions.clear();
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             Log.i(TAG, "Build.VERSION.SDK_INT < Build.VERSION_CODES.M");
@@ -123,8 +134,8 @@ class AcpManager {
         Log.i(TAG, "shouldShowRational = " + shouldShowRational);
         String[] permissions = mDeniedPermissions.toArray(new String[mDeniedPermissions.size()]);
         //如选择了不再提醒，则回调，根据返回 boolean 确定是否继续
-        if (shouldShowRational) if (!mCallback.onShowRational()) return;
-        requestPermissions(permissions);
+        if (shouldShowRational) mCallback.onShowRational(permissions);
+        else requestPermissions(permissions);
     }
 
     /**
@@ -132,8 +143,8 @@ class AcpManager {
      *
      * @param permissions
      */
-    private synchronized void requestPermissions(String[] permissions) {
-        mService.requestPermissions(mActivity, permissions, REQUEST_CODE_PERMISSION);
+    synchronized void requestPermissions(String[] permissions) {
+        mService.requestPermissions(mActivity, permissions, Acp.REQUEST_CODE_PERMISSION);
     }
 
     /**
@@ -145,7 +156,7 @@ class AcpManager {
      */
     synchronized void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch (requestCode) {
-            case REQUEST_CODE_PERMISSION:
+            case Acp.REQUEST_CODE_PERMISSION:
                 LinkedList<String> grantedPermissions = new LinkedList<>();
                 LinkedList<String> deniedPermissions = new LinkedList<>();
                 for (int i = 0; i < permissions.length; i++) {
@@ -166,13 +177,6 @@ class AcpManager {
     }
 
     /**
-     * 摧毁本库的 AcpActivity
-     */
-    private void onDestroy() {
-        if (mActivity != null) mActivity.finish();
-    }
-
-    /**
      * 响应设置权限返回结果
      *
      * @param requestCode
@@ -180,10 +184,17 @@ class AcpManager {
      * @param data
      */
     synchronized void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (mCallback == null || requestCode != REQUEST_CODE_SETTING) {
+        if (mCallback == null || requestCode != Acp.REQUEST_CODE_SETTING) {
             onDestroy();
             return;
         }
         checkSelfPermission();
+    }
+
+    /**
+     * 摧毁本库的 AcpActivity
+     */
+    private void onDestroy() {
+        if (mActivity != null) mActivity.finish();
     }
 }

@@ -1,27 +1,48 @@
 package com.mylhyl.acp3;
 
+import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
+
+import java.lang.reflect.Method;
 
 /**
  * Created by hupei on 2016/8/26.
  */
 public class Acp {
 
-    private static Acp mInstance;
-    private AcpManager mAcpManager;
+    public static final int REQUEST_CODE_PERMISSION = 0x38;
+    public static final int REQUEST_CODE_SETTING = 0x39;
 
-    public static Acp getInstance(Context context) {
-        if (mInstance == null)
-            synchronized (Acp.class) {
-                if (mInstance == null) {
-                    mInstance = new Acp(context);
-                }
-            }
-        return mInstance;
+    private static Application mApp;
+    private static AcpManager mAcpManager;
+
+    private Acp() {
     }
 
-    private Acp(Context context) {
-        mAcpManager = new AcpManager(context.getApplicationContext());
+    public static void init(Application app) {
+        if (mApp == null) {
+            mApp = app;
+        }
+    }
+
+    public static Application app() {
+        if (mApp == null) {
+            try {
+                Class<?> renderActionClass = Class.forName("com.android.layoutlib.bridge.impl.RenderAction");
+                Method method = renderActionClass.getDeclaredMethod("getCurrentContext");
+                Context context = (Context) method.invoke(null);
+                mApp = new MockApplication(context);
+            } catch (Throwable ignored) {
+                throw new RuntimeException("please invoke acp.init(app) on Application#onCreate()"
+                        + " and register your Application in manifest.");
+            }
+        }
+        return mApp;
+    }
+
+    static void setAcpManager(AcpManager acpManager) {
+        mAcpManager = acpManager;
     }
 
     /**
@@ -30,11 +51,39 @@ public class Acp {
      * @param permissions
      * @param acpListener
      */
-    public void request(String[] permissions, AcpListener acpListener) {
-        mAcpManager.request(permissions, acpListener);
+    public static void execute(String[] permissions, AcpListener acpListener) {
+        getAcpManager().execute(permissions, acpListener);
     }
 
-    AcpManager getAcpManager() {
+    /**
+     * 检查权限
+     */
+    public static void checkSelfPermission() {
+        getAcpManager().checkSelfPermission();
+    }
+
+    /**
+     * 向系统请求权限
+     *
+     * @param permissions
+     */
+    public static void requestPermissions(String[] permissions) {
+        getAcpManager().requestPermissions(permissions);
+    }
+
+    public static void onActivityResult(int requestCode, int resultCode, Intent data) {
+        getAcpManager().onActivityResult(requestCode, resultCode, data);
+    }
+
+    static AcpManager getAcpManager() {
+        if (mAcpManager == null)
+            AcpManager.getInstance();
         return mAcpManager;
+    }
+
+    private static class MockApplication extends Application {
+        public MockApplication(Context baseContext) {
+            this.attachBaseContext(baseContext);
+        }
     }
 }
