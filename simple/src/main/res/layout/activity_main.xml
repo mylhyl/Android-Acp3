@@ -20,4 +20,13 @@
         android:layout_marginStart="69dp"
         android:layout_marginTop="56dp"
         android:text="权限" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Fragment权限"
+        android:id="@+id/button2"
+        android:layout_centerVertical="true"
+        android:layout_alignLeft="@+id/button"
+        android:layout_alignStart="@+id/button" />
 </RelativeLayout>
