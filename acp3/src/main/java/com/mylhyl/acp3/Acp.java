@@ -2,7 +2,6 @@ package com.mylhyl.acp3;
 
 import android.app.Application;
 import android.content.Context;
-import android.content.Intent;
 
 import java.lang.reflect.Method;
 
@@ -10,9 +9,6 @@ import java.lang.reflect.Method;
  * Created by hupei on 2016/8/26.
  */
 public class Acp {
-
-    public static final int REQUEST_CODE_PERMISSION = 0x38;
-    public static final int REQUEST_CODE_SETTING = 0x39;
 
     private static Application mApp;
     private static AcpManager mAcpManager;
@@ -56,23 +52,10 @@ public class Acp {
     }
 
     /**
-     * 检查权限
+     * 重新开始
      */
-    public static void checkSelfPermission() {
+    public static void reExecute() {
         getAcpManager().checkSelfPermission();
-    }
-
-    /**
-     * 向系统请求权限
-     *
-     * @param permissions
-     */
-    public static void requestPermissions(String[] permissions) {
-        getAcpManager().requestPermissions(permissions);
-    }
-
-    public static void onActivityResult(int requestCode, int resultCode, Intent data) {
-        getAcpManager().onActivityResult(requestCode, resultCode, data);
     }
 
     static AcpManager getAcpManager() {

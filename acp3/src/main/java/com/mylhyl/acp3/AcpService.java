@@ -14,7 +14,7 @@ import android.util.Log;
  * Created by hupei on 2016/8/26.
  */
 class AcpService {
-    private static final String TAG = "AcpService";
+    private static final String TAG = "AcpManager";
 
     /**
      * 检查权限授权状态
@@ -61,8 +61,8 @@ class AcpService {
      * @return
      */
     boolean shouldShowRequestPermissionRationale(Activity activity, String permission) {
-        boolean rationale = ActivityCompat.shouldShowRequestPermissionRationale(activity, permission);
-        Log.i(TAG, "rationale = " + rationale);
-        return rationale;
+        boolean shouldShowRational = ActivityCompat.shouldShowRequestPermissionRationale(activity, permission);
+        Log.i(TAG, permission + " = shouldShowRational:" + shouldShowRational);
+        return shouldShowRational;
     }
 }

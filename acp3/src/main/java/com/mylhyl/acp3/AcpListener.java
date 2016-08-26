@@ -9,14 +9,12 @@ public interface AcpListener {
     /**
      * 申请权限开始前，此方法会调用
      */
-    void onStart();
+    void onStart(PermissionRequest request);
 
     /**
      * 用户勾选了不再提醒时，此方法将会调用
-     *
-     * @return
      */
-    void onShowRational(String[] permissions);
+    void onShowRational(PermissionRequest request);
 
     /**
      * 全部同意通过后，此方法将会调用

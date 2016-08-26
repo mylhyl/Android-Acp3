@@ -18,6 +18,9 @@ import java.util.Set;
  */
 class AcpManager {
     private static final String TAG = "AcpManager";
+
+    private static final int REQUEST_CODE_PERMISSION = 0x38;
+
     private Context mContext;
     private Activity mActivity;
     private AcpService mService;
@@ -70,18 +73,20 @@ class AcpManager {
      * @param acpListener
      */
     synchronized void execute(String[] permissions, AcpListener acpListener) {
-        if (permissions == null || permissions.length == 0)
-            throw new IllegalArgumentException("mPermissions no found...");
-        if (acpListener == null) throw new NullPointerException("AcpListener is null...");
         mPermissions = permissions;
         mCallback = acpListener;
-        mCallback.onStart();
+        checkSelfPermission();
     }
 
     /**
      * 检查权限
      */
     synchronized void checkSelfPermission() {
+
+        if (mPermissions == null || mPermissions.length == 0)
+            throw new IllegalArgumentException("mPermissions no found...");
+        if (mCallback == null) throw new NullPointerException("AcpListener is null...");
+
         mDeniedPermissions.clear();
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             Log.i(TAG, "Build.VERSION.SDK_INT < Build.VERSION_CODES.M");
@@ -93,7 +98,7 @@ class AcpManager {
             //检查申请的权限是否在 AndroidManifest.xml 中
             if (mManifestPermissions.contains(permission)) {
                 int checkSelfPermission = mService.checkSelfPermission(mContext, permission);
-                Log.i(TAG, "checkSelfPermission = " + checkSelfPermission);
+                Log.i(TAG, permission + " = checkSelfPermission:" + checkSelfPermission);
                 //如果是拒绝状态则装入拒绝集合中
                 if (checkSelfPermission == PackageManager.PERMISSION_DENIED) {
                     mDeniedPermissions.add(permission);
@@ -107,13 +112,18 @@ class AcpManager {
             onDestroy();
             return;
         }
-        startAcpActivity();
+        mCallback.onStart(new PermissionRequest() {
+            @Override
+            public void onPositive() {
+                startAcpActivity();
+            }
+        });
     }
 
     /**
      * 启动处理权限过程的 Activity
      */
-    private synchronized void startAcpActivity() {
+    synchronized void startAcpActivity() {
         Intent intent = new Intent(mContext, AcpActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
@@ -126,25 +136,29 @@ class AcpManager {
      */
     synchronized void checkRequestPermissionRationale(Activity activity) {
         mActivity = activity;
-        boolean shouldShowRational = false;
-        //如果有则提示申请理由提示框，否则直接向系统请求权限
+        boolean rationale = false;
+        //如果有拒绝则提示申请理由提示框，否则直接向系统请求权限
         for (String permission : mDeniedPermissions) {
-            shouldShowRational = shouldShowRational || mService.shouldShowRequestPermissionRationale(mActivity, permission);
+            rationale = rationale || mService.shouldShowRequestPermissionRationale(mActivity, permission);
         }
-        Log.i(TAG, "shouldShowRational = " + shouldShowRational);
-        String[] permissions = mDeniedPermissions.toArray(new String[mDeniedPermissions.size()]);
-        //如选择了不再提醒，则回调，根据返回 boolean 确定是否继续
-        if (shouldShowRational) mCallback.onShowRational(permissions);
-        else requestPermissions(permissions);
+        Log.i(TAG, "rationale = " + rationale);
+        //如选择了不再提醒，则回调
+        if (rationale) mCallback.onShowRational(new PermissionRequest() {
+            @Override
+            public void onPositive() {
+                requestPermissions();
+            }
+        });
+        //处理不再提醒时，重新再次请求
+        else requestPermissions();
     }
 
     /**
      * 向系统请求权限
-     *
-     * @param permissions
      */
-    synchronized void requestPermissions(String[] permissions) {
-        mService.requestPermissions(mActivity, permissions, Acp.REQUEST_CODE_PERMISSION);
+    synchronized void requestPermissions() {
+        String[] permissions = mDeniedPermissions.toArray(new String[mDeniedPermissions.size()]);
+        mService.requestPermissions(mActivity, permissions, REQUEST_CODE_PERMISSION);
     }
 
     /**
@@ -156,7 +170,7 @@ class AcpManager {
      */
     synchronized void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch (requestCode) {
-            case Acp.REQUEST_CODE_PERMISSION:
+            case REQUEST_CODE_PERMISSION:
                 LinkedList<String> grantedPermissions = new LinkedList<>();
                 LinkedList<String> deniedPermissions = new LinkedList<>();
                 for (int i = 0; i < permissions.length; i++) {
@@ -174,21 +188,6 @@ class AcpManager {
                 onDestroy();
                 break;
         }
-    }
-
-    /**
-     * 响应设置权限返回结果
-     *
-     * @param requestCode
-     * @param resultCode
-     * @param data
-     */
-    synchronized void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (mCallback == null || requestCode != Acp.REQUEST_CODE_SETTING) {
-            onDestroy();
-            return;
-        }
-        checkSelfPermission();
     }
 
     /**

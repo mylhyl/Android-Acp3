@@ -30,9 +30,4 @@ public class AcpActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         Acp.getAcpManager().onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Acp.getAcpManager().onActivityResult(requestCode, resultCode, data);
-    }
 }
